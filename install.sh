@@ -7,6 +7,9 @@
 
 set -e
 
+# Save the repository directory
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "======================================"
 echo "Icecast Streamer Installation"
 echo "======================================"
@@ -87,9 +90,9 @@ mkdir -p "$INSTALL_DIR"
 
 echo ""
 echo "Step 5: Copying files..."
-cp streamer.py "$INSTALL_DIR/"
-cp web_interface.py "$INSTALL_DIR/"
-cp -r templates "$INSTALL_DIR/"
+cp "$REPO_DIR/streamer.py" "$INSTALL_DIR/"
+cp "$REPO_DIR/web_interface.py" "$INSTALL_DIR/"
+cp -r "$REPO_DIR/templates" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/streamer.py"
 chmod +x "$INSTALL_DIR/web_interface.py"
 
@@ -141,15 +144,15 @@ echo ""
 echo "Step 8: Installing systemd services..."
 
 # Update service files with correct paths
-sed "s|/home/pi|/home/$USER|g" icecast-streamer.service > /tmp/icecast-streamer.service
+sed "s|/home/pi|/home/$USER|g" "$REPO_DIR/icecast-streamer.service" > /tmp/icecast-streamer.service
 sed "s|User=pi|User=$USER|g" /tmp/icecast-streamer.service > /tmp/icecast-streamer2.service
 sudo mv /tmp/icecast-streamer2.service /etc/systemd/system/icecast-streamer.service
 
-sed "s|/home/pi|/home/$USER|g" icecast-web.service > /tmp/icecast-web.service
+sed "s|/home/pi|/home/$USER|g" "$REPO_DIR/icecast-web.service" > /tmp/icecast-web.service
 sed "s|User=pi|User=$USER|g" /tmp/icecast-web.service > /tmp/icecast-web2.service
 sudo mv /tmp/icecast-web2.service /etc/systemd/system/icecast-web.service
 
-sed "s|/home/pi|/home/$USER|g" kiosk-mode.service > /tmp/kiosk-mode.service
+sed "s|/home/pi|/home/$USER|g" "$REPO_DIR/kiosk-mode.service" > /tmp/kiosk-mode.service
 sed "s|User=pi|User=$USER|g" /tmp/kiosk-mode.service > /tmp/kiosk-mode2.service
 sudo mv /tmp/kiosk-mode2.service /etc/systemd/system/kiosk-mode.service
 
