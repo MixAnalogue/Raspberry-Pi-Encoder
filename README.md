@@ -49,7 +49,23 @@ unzip main.zip
 cd Raspberry-Pi-Encoder-main
 ```
 
-### 2. Run the Installation Script
+### 2. Install Desktop Environment (Raspberry Pi OS Lite only)
+
+**If you're using Raspberry Pi OS Lite**, you need to install a desktop environment first:
+
+```bash
+chmod +x install-desktop.sh
+./install-desktop.sh
+```
+
+This will:
+- Install minimal X server and desktop environment
+- Configure auto-login to desktop
+- Enable graphical boot
+
+After installation, reboot when prompted. **If you're using full Raspberry Pi OS with desktop, skip this step.**
+
+### 3. Run the Installation Script
 
 The installation script will install all dependencies and configure your system:
 
@@ -67,7 +83,7 @@ The installer will:
 - Configure auto-start on boot
 - Set up the web interface
 
-### 3. Enter Configuration
+### 4. Enter Configuration
 
 During installation, you'll be prompted for:
 
@@ -78,7 +94,7 @@ During installation, you'll be prompted for:
 - **Password**: Your Icecast source password
 - **Stream Name**: Display name for your stream (optional)
 
-### 4. Reboot
+### 5. Reboot
 
 After installation, reboot your Raspberry Pi:
 
@@ -192,6 +208,28 @@ sudo systemctl restart icecast-streamer
 ```
 
 ## Troubleshooting
+
+### Kiosk Mode Not Loading (Raspberry Pi OS Lite)
+
+If you're using **Raspberry Pi OS Lite** and only see the command line on boot:
+
+1. Raspberry Pi OS Lite doesn't include a desktop environment by default
+2. Run the desktop installation script:
+   ```bash
+   cd ~/Raspberry-Pi-Encoder
+   chmod +x install-desktop.sh
+   ./install-desktop.sh
+   sudo reboot
+   ```
+
+3. After reboot, you should see a desktop with the web interface in full-screen
+
+If the desktop loads but the browser doesn't start:
+```bash
+cd ~/Raspberry-Pi-Encoder
+./fix-kiosk.sh
+sudo reboot
+```
 
 ### No Audio Device Found
 
