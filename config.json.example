@@ -1,0 +1,10 @@
+{
+    "hostname": "your-icecast-server.com",
+    "port": "8000",
+    "mount_point": "stream.aac",
+    "username": "source",
+    "password": "your-password-here",
+    "stream_name": "Raspberry Pi Stream",
+    "stream_description": "Live Audio Stream",
+    "stream_genre": "Various"
+}

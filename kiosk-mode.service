@@ -1,0 +1,17 @@
+[Unit]
+Description=Chromium Kiosk Mode for Icecast Streamer
+After=graphical.target network.target icecast-web.service
+Wants=graphical.target
+
+[Service]
+Type=simple
+User=pi
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/chromium-browser --kiosk --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-restore-session-state --disable-features=TranslateUI --check-for-update-interval=31536000 http://localhost:5000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target
