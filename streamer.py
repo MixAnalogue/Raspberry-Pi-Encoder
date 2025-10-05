@@ -35,6 +35,14 @@ class IcecastStreamer:
         self.reconnect_delay = 5
         self.max_reconnect_delay = 60
         self.status_file = '/tmp/streamer_status.json'
+        self.pid_file = '/tmp/streamer.pid'
+
+        # Write PID file
+        try:
+            with open(self.pid_file, 'w') as f:
+                f.write(str(os.getpid()))
+        except Exception as e:
+            logger.error(f"Error writing PID file: {e}")
 
         # Register signal handlers for graceful shutdown
         signal.signal(signal.SIGTERM, self.signal_handler)
@@ -45,7 +53,16 @@ class IcecastStreamer:
         logger.info(f"Received signal {signum}, shutting down...")
         self.should_run = False
         self.stop_stream()
+        self.cleanup()
         sys.exit(0)
+
+    def cleanup(self):
+        """Cleanup resources on shutdown"""
+        try:
+            if os.path.exists(self.pid_file):
+                os.remove(self.pid_file)
+        except Exception as e:
+            logger.error(f"Error removing PID file: {e}")
 
     def load_config(self):
         """Load configuration from JSON file"""
@@ -306,6 +323,7 @@ class IcecastStreamer:
         finally:
             self.stop_stream()
             self.update_status("stopped", "Shutdown")
+            self.cleanup()
 
         return 0
 

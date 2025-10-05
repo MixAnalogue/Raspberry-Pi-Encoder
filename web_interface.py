@@ -51,6 +51,17 @@ def get_config():
 def is_streamer_running():
     """Check if streamer process is running"""
     try:
+        # First check systemd
+        result = subprocess.run(
+            ['systemctl', 'is-active', 'icecast-streamer'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip() == 'active':
+            return True
+
+        # Fall back to PID file check
         if os.path.exists(PID_FILE):
             with open(PID_FILE, 'r') as f:
                 pid = int(f.read().strip())
@@ -74,12 +85,15 @@ def start_streamer():
         result = subprocess.run(
             ['sudo', 'systemctl', 'start', 'icecast-streamer'],
             capture_output=True,
+            text=True,
             timeout=10
         )
 
         if result.returncode == 0:
             return True, "Streamer started"
         else:
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            print(f"systemctl start failed: {error_msg}")
             # Try starting directly
             subprocess.Popen(
                 ['python3', 'streamer.py'],
@@ -91,6 +105,7 @@ def start_streamer():
             return True, "Streamer started"
 
     except Exception as e:
+        print(f"Error in start_streamer: {e}")
         return False, f"Error starting streamer: {e}"
 
 
@@ -101,11 +116,15 @@ def stop_streamer():
         result = subprocess.run(
             ['sudo', 'systemctl', 'stop', 'icecast-streamer'],
             capture_output=True,
+            text=True,
             timeout=10
         )
 
         if result.returncode == 0:
             return True, "Streamer stopped"
+
+        error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+        print(f"systemctl stop failed: {error_msg}")
 
         # Try killing by PID
         if os.path.exists(PID_FILE):
@@ -113,11 +132,15 @@ def stop_streamer():
                 pid = int(f.read().strip())
 
             os.kill(pid, signal.SIGTERM)
+            # Wait a moment for process to stop
+            import time
+            time.sleep(1)
             return True, "Streamer stopped"
 
         return False, "Streamer not running"
 
     except Exception as e:
+        print(f"Error in stop_streamer: {e}")
         return False, f"Error stopping streamer: {e}"
 
 
@@ -128,11 +151,15 @@ def restart_streamer():
         result = subprocess.run(
             ['sudo', 'systemctl', 'restart', 'icecast-streamer'],
             capture_output=True,
+            text=True,
             timeout=10
         )
 
         if result.returncode == 0:
             return True, "Streamer restarted"
+
+        error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+        print(f"systemctl restart failed: {error_msg}")
 
         # Otherwise stop and start
         stop_streamer()
@@ -141,6 +168,7 @@ def restart_streamer():
         return start_streamer()
 
     except Exception as e:
+        print(f"Error in restart_streamer: {e}")
         return False, f"Error restarting streamer: {e}"
 
 

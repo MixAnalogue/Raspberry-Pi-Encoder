@@ -164,7 +164,15 @@ sudo systemctl enable icecast-web.service
 sudo systemctl enable kiosk-mode.service
 
 echo ""
-echo "Step 10: Configuring autostart..."
+echo "Step 10: Configuring sudo permissions for web interface..."
+# Create sudoers file to allow control without password
+sed "s|pi|$USER|g" "$REPO_DIR/icecast-streamer-sudoers" > /tmp/icecast-streamer-sudoers
+sudo chown root:root /tmp/icecast-streamer-sudoers
+sudo chmod 0440 /tmp/icecast-streamer-sudoers
+sudo mv /tmp/icecast-streamer-sudoers /etc/sudoers.d/icecast-streamer
+
+echo ""
+echo "Step 11: Configuring autostart..."
 
 # Disable screen blanking
 if ! grep -q "xset s off" /home/$USER/.xinitrc 2>/dev/null; then
@@ -195,7 +203,7 @@ EOF
 fi
 
 echo ""
-echo "Step 11: Testing USB audio device..."
+echo "Step 12: Testing USB audio device..."
 if arecord -l | grep -q "card"; then
     echo "USB audio devices found:"
     arecord -l | grep "card"

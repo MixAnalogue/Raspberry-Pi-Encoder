@@ -1,0 +1,8 @@
+# Allow user to control icecast-streamer service without password
+# This file should be copied to /etc/sudoers.d/icecast-streamer
+
+# Replace 'pi' with your actual username
+pi ALL=(ALL) NOPASSWD: /bin/systemctl start icecast-streamer
+pi ALL=(ALL) NOPASSWD: /bin/systemctl stop icecast-streamer
+pi ALL=(ALL) NOPASSWD: /bin/systemctl restart icecast-streamer
+pi ALL=(ALL) NOPASSWD: /bin/systemctl status icecast-streamer
