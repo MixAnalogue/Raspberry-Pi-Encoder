@@ -49,43 +49,29 @@ unzip main.zip
 cd Raspberry-Pi-Encoder-main
 ```
 
-### 2. Install Desktop Environment (Raspberry Pi OS Lite only)
+### 2. Run the Installation Script
 
-**If you're using Raspberry Pi OS Lite**, you need to install a minimal X server first:
-
-```bash
-chmod +x install-desktop.sh
-./install-desktop.sh
-```
-
-This will:
-- Install minimal X server (Xorg) and Openbox window manager
-- Configure auto-login to console with automatic X server startup
-- Set up for kiosk mode operation
-
-After installation, reboot when prompted. The system will auto-start X server on boot.
-
-**If you're using full Raspberry Pi OS with desktop, skip this step.**
-
-### 3. Run the Installation Script
-
-The installation script will install all dependencies and configure your system:
+The installation script **automatically detects** if you're using Raspberry Pi OS Lite or Full and installs what's needed:
 
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-The installer will:
-- Update system packages
-- Install required dependencies (Python, FFmpeg, Chromium, etc.)
-- Create installation directory at `/home/pi/icecast-streamer`
-- Prompt for your Icecast server configuration
-- Install systemd services
-- Configure auto-start on boot
-- Set up the web interface
+**On Raspberry Pi OS Lite**, the installer will:
+- Install minimal X server + Openbox window manager
+- Configure auto-login and auto-start X server
+- Install all required dependencies (Python, FFmpeg, Chromium, etc.)
+- Set up streaming encoder and web interface
+- Configure kiosk mode for touchscreen
 
-### 4. Enter Configuration
+**On Full Raspberry Pi OS**, the installer will:
+- Skip X server installation (already present)
+- Install all required dependencies
+- Set up streaming encoder and web interface
+- Configure kiosk mode
+
+### 3. Enter Configuration
 
 During installation, you'll be prompted for:
 
@@ -96,7 +82,7 @@ During installation, you'll be prompted for:
 - **Password**: Your Icecast source password
 - **Stream Name**: Display name for your stream (optional)
 
-### 5. Reboot
+### 4. Reboot
 
 After installation, reboot your Raspberry Pi:
 
@@ -211,31 +197,27 @@ sudo systemctl restart icecast-streamer
 
 ## Troubleshooting
 
-### Kiosk Mode Not Loading (Raspberry Pi OS Lite)
+### Browser Not Loading on Boot
 
-If you're using **Raspberry Pi OS Lite** and only see the command line on boot:
+If the browser doesn't load automatically or you see a login prompt:
 
-1. Raspberry Pi OS Lite doesn't include X server by default
-2. Run the desktop installation script:
+1. The install script should have configured everything automatically
+2. Try running the installer again (it's safe to re-run):
    ```bash
    cd ~/Raspberry-Pi-Encoder
-   chmod +x install-desktop.sh
-   ./install-desktop.sh
+   ./install.sh
    sudo reboot
    ```
-
-3. After reboot, you should see X server start and the browser load in full-screen
-
-If X server loads but the browser doesn't start:
-```bash
-cd ~/Raspberry-Pi-Encoder
-./fix-kiosk.sh
-sudo reboot
-```
 
 To check what's happening during startup:
 ```bash
 cat /tmp/kiosk-startup.log
+```
+
+If the issue persists, check that services are running:
+```bash
+sudo systemctl status icecast-web
+ps aux | grep chromium
 ```
 
 ### No Audio Device Found

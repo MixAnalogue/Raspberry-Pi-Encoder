@@ -2,7 +2,7 @@
 
 ##############################################
 # Icecast Streamer Installation Script
-# For Raspberry Pi with touchscreen
+# Works on both Raspberry Pi OS Lite and Full
 ##############################################
 
 set -e
@@ -32,6 +32,22 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
+# Detect if X server is installed (check if we're on Lite or Full Pi OS)
+X_INSTALLED=false
+if command -v startx &>/dev/null || dpkg -l | grep -q xserver-xorg; then
+    X_INSTALLED=true
+fi
+
+if [ "$X_INSTALLED" = false ]; then
+    echo ""
+    echo "╔════════════════════════════════════════════════════╗"
+    echo "║  Raspberry Pi OS Lite Detected                     ║"
+    echo "║  Installing minimal X server for kiosk mode...    ║"
+    echo "╚════════════════════════════════════════════════════╝"
+    echo ""
+    sleep 2
+fi
+
 echo "Step 1: Updating system packages..."
 sudo apt-get update
 
@@ -50,16 +66,28 @@ fi
 
 echo "Using Chromium package: $CHROMIUM_PKG"
 
-sudo apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    ffmpeg \
-    alsa-utils \
-    $CHROMIUM_PKG \
-    unclutter \
-    x11-xserver-utils \
-    curl
+# Base packages needed for all installations
+BASE_PACKAGES="python3 python3-pip python3-venv ffmpeg alsa-utils $CHROMIUM_PKG unclutter x11-xserver-utils curl"
+
+# If X server not installed, add minimal desktop packages
+if [ "$X_INSTALLED" = false ]; then
+    echo "Installing X server and Openbox..."
+    sudo apt-get install -y \
+        xserver-xorg \
+        xinit \
+        xorg \
+        openbox \
+        obconf \
+        libgtk-3-0 \
+        libgbm1 \
+        libasound2 \
+        libxss1 \
+        libnss3 \
+        $BASE_PACKAGES
+else
+    echo "X server already installed, skipping desktop installation..."
+    sudo apt-get install -y $BASE_PACKAGES
+fi
 
 echo ""
 echo "Step 3: Installing Python dependencies..."
@@ -72,8 +100,70 @@ else
     pip3 install --user --break-system-packages flask
 fi
 
+# Configure auto-login if on Lite (X was just installed)
+if [ "$X_INSTALLED" = false ]; then
+    echo ""
+    echo "Step 4: Configuring auto-login to console..."
+
+    # Method 1: Use raspi-config
+    sudo raspi-config nonint do_boot_behaviour B2
+
+    # Method 2: Direct systemd configuration (more reliable)
+    sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
+    sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null <<EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
+EOF
+
+    # Reload systemd
+    sudo systemctl daemon-reload
+
+    echo ""
+    echo "Step 5: Configuring auto-start X server..."
+    # Create .bash_profile to start X on login
+    cat > /home/$USER/.bash_profile <<'EOF'
+# Auto-start X server on login to tty1
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    startx
+fi
+EOF
+
+    # Also add to .bashrc as fallback
+    if ! grep -q "startx" /home/$USER/.bashrc 2>/dev/null; then
+        cat >> /home/$USER/.bashrc <<'EOF'
+
+# Auto-start X server on login to tty1
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    startx
+fi
+EOF
+    fi
+
+    # Create minimal .xinitrc
+    cat > /home/$USER/.xinitrc <<'EOF'
+#!/bin/sh
+# Disable screen blanking
+xset s off
+xset -dpms
+xset s noblank
+
+# Set background to black
+xsetroot -solid black
+
+# Start openbox
+exec openbox-session
+EOF
+
+    chmod +x /home/$USER/.xinitrc
+
+    STEP_OFFSET=5
+else
+    STEP_OFFSET=3
+fi
+
 echo ""
-echo "Step 4: Creating installation directory..."
+echo "Step $((STEP_OFFSET+1)): Creating installation directory..."
 INSTALL_DIR="/home/$USER/icecast-streamer"
 
 if [ -d "$INSTALL_DIR" ]; then
@@ -90,7 +180,7 @@ fi
 mkdir -p "$INSTALL_DIR"
 
 echo ""
-echo "Step 5: Copying files..."
+echo "Step $((STEP_OFFSET+2)): Copying files..."
 cp "$REPO_DIR/streamer.py" "$INSTALL_DIR/"
 cp "$REPO_DIR/web_interface.py" "$INSTALL_DIR/"
 cp "$REPO_DIR/start-kiosk.sh" "$INSTALL_DIR/"
@@ -100,7 +190,7 @@ chmod +x "$INSTALL_DIR/web_interface.py"
 chmod +x "$INSTALL_DIR/start-kiosk.sh"
 
 echo ""
-echo "Step 6: Creating configuration..."
+echo "Step $((STEP_OFFSET+3)): Creating configuration..."
 cd "$INSTALL_DIR"
 
 if [ ! -f "config.json" ]; then
@@ -138,13 +228,13 @@ else
 fi
 
 echo ""
-echo "Step 7: Creating log directory..."
+echo "Step $((STEP_OFFSET+4)): Creating log directory..."
 sudo mkdir -p /var/log
 sudo touch /var/log/icecast-streamer.log
 sudo chown $USER:$USER /var/log/icecast-streamer.log
 
 echo ""
-echo "Step 8: Installing systemd services..."
+echo "Step $((STEP_OFFSET+5)): Installing systemd services..."
 
 # Update service files with correct paths
 sed "s|/home/pi|/home/$USER|g" "$REPO_DIR/icecast-streamer.service" > /tmp/icecast-streamer.service
@@ -160,7 +250,7 @@ sed "s|User=pi|User=$USER|g" /tmp/kiosk-mode.service > /tmp/kiosk-mode2.service
 sudo mv /tmp/kiosk-mode2.service /etc/systemd/system/kiosk-mode.service
 
 echo ""
-echo "Step 9: Enabling services..."
+echo "Step $((STEP_OFFSET+6)): Enabling services..."
 sudo systemctl daemon-reload
 sudo systemctl enable icecast-streamer.service
 sudo systemctl enable icecast-web.service
@@ -168,7 +258,7 @@ sudo systemctl enable icecast-web.service
 # We use Openbox/LXDE autostart instead for better reliability
 
 echo ""
-echo "Step 10: Configuring sudo permissions for web interface..."
+echo "Step $((STEP_OFFSET+7)): Configuring sudo permissions for web interface..."
 # Create sudoers file to allow control without password
 sed "s|pi|$USER|g" "$REPO_DIR/icecast-streamer-sudoers" > /tmp/icecast-streamer-sudoers
 sudo chown root:root /tmp/icecast-streamer-sudoers
@@ -176,7 +266,7 @@ sudo chmod 0440 /tmp/icecast-streamer-sudoers
 sudo mv /tmp/icecast-streamer-sudoers /etc/sudoers.d/icecast-streamer
 
 echo ""
-echo "Step 11: Configuring autostart..."
+echo "Step $((STEP_OFFSET+8)): Configuring autostart..."
 
 # Disable screen blanking
 if ! grep -q "xset s off" /home/$USER/.xinitrc 2>/dev/null; then
@@ -220,7 +310,7 @@ EOF
 chmod +x "$OPENBOX_AUTOSTART_DIR/autostart"
 
 echo ""
-echo "Step 12: Testing USB audio device..."
+echo "Step $((STEP_OFFSET+9)): Testing USB audio device..."
 if arecord -l | grep -q "card"; then
     echo "USB audio devices found:"
     arecord -l | grep "card"
@@ -234,10 +324,20 @@ echo "======================================"
 echo "Installation Complete!"
 echo "======================================"
 echo ""
+
+if [ "$X_INSTALLED" = false ]; then
+    echo "Raspberry Pi OS Lite Configuration:"
+    echo "  ✓ Minimal X server installed"
+    echo "  ✓ Openbox window manager configured"
+    echo "  ✓ Auto-login enabled"
+    echo "  ✓ Auto-start X server configured"
+    echo ""
+fi
+
 echo "Services installed:"
 echo "  - icecast-streamer: Main streaming service"
 echo "  - icecast-web: Web interface (http://localhost:5000)"
-echo "  - kiosk-mode: Auto-start browser on boot"
+echo "  - Kiosk mode: Browser auto-starts on boot"
 echo ""
 echo "Installation directory: $INSTALL_DIR"
 echo ""
@@ -248,6 +348,7 @@ echo ""
 echo "To view logs:"
 echo "  sudo journalctl -u icecast-streamer -f"
 echo "  sudo journalctl -u icecast-web -f"
+echo "  cat /tmp/kiosk-startup.log"
 echo ""
 echo "The web interface will automatically load on boot."
 echo "You can also access it from another device at:"
@@ -255,7 +356,7 @@ echo "  http://$(hostname -I | awk '{print $1}'):5000"
 echo ""
 echo "Configuration file: $INSTALL_DIR/config.json"
 echo ""
-echo "Reboot recommended to start all services automatically."
+echo "Reboot required to start all services automatically."
 echo ""
 read -p "Reboot now? (y/n) " -n 1 -r
 echo
