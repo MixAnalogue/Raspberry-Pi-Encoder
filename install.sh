@@ -34,13 +34,26 @@ sudo apt-get update
 
 echo ""
 echo "Step 2: Installing required packages..."
+
+# Detect Chromium package name (chromium vs chromium-browser)
+if apt-cache show chromium &>/dev/null; then
+    CHROMIUM_PKG="chromium"
+elif apt-cache show chromium-browser &>/dev/null; then
+    CHROMIUM_PKG="chromium-browser"
+else
+    echo "Warning: Chromium package not found. Will try to install chromium."
+    CHROMIUM_PKG="chromium"
+fi
+
+echo "Using Chromium package: $CHROMIUM_PKG"
+
 sudo apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
     ffmpeg \
     alsa-utils \
-    chromium-browser \
+    $CHROMIUM_PKG \
     unclutter \
     x11-xserver-utils
 

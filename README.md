@@ -98,7 +98,7 @@ If you prefer to install manually:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip ffmpeg alsa-utils chromium-browser unclutter x11-xserver-utils
+sudo apt-get install -y python3 python3-pip ffmpeg alsa-utils chromium unclutter x11-xserver-utils
 pip3 install --user flask
 ```
 
@@ -241,7 +241,7 @@ You should see your USB audio interface listed. If not:
 
 3. Try manually starting:
    ```bash
-   DISPLAY=:0 chromium-browser --kiosk http://localhost:5000
+   DISPLAY=:0 chromium --kiosk http://localhost:5000
    ```
 
 ### Stream Keeps Disconnecting
