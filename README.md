@@ -51,7 +51,7 @@ cd Raspberry-Pi-Encoder-main
 
 ### 2. Install Desktop Environment (Raspberry Pi OS Lite only)
 
-**If you're using Raspberry Pi OS Lite**, you need to install a desktop environment first:
+**If you're using Raspberry Pi OS Lite**, you need to install a minimal X server first:
 
 ```bash
 chmod +x install-desktop.sh
@@ -59,11 +59,13 @@ chmod +x install-desktop.sh
 ```
 
 This will:
-- Install minimal X server and desktop environment
-- Configure auto-login to desktop
-- Enable graphical boot
+- Install minimal X server (Xorg) and Openbox window manager
+- Configure auto-login to console with automatic X server startup
+- Set up for kiosk mode operation
 
-After installation, reboot when prompted. **If you're using full Raspberry Pi OS with desktop, skip this step.**
+After installation, reboot when prompted. The system will auto-start X server on boot.
+
+**If you're using full Raspberry Pi OS with desktop, skip this step.**
 
 ### 3. Run the Installation Script
 
@@ -213,7 +215,7 @@ sudo systemctl restart icecast-streamer
 
 If you're using **Raspberry Pi OS Lite** and only see the command line on boot:
 
-1. Raspberry Pi OS Lite doesn't include a desktop environment by default
+1. Raspberry Pi OS Lite doesn't include X server by default
 2. Run the desktop installation script:
    ```bash
    cd ~/Raspberry-Pi-Encoder
@@ -222,13 +224,18 @@ If you're using **Raspberry Pi OS Lite** and only see the command line on boot:
    sudo reboot
    ```
 
-3. After reboot, you should see a desktop with the web interface in full-screen
+3. After reboot, you should see X server start and the browser load in full-screen
 
-If the desktop loads but the browser doesn't start:
+If X server loads but the browser doesn't start:
 ```bash
 cd ~/Raspberry-Pi-Encoder
 ./fix-kiosk.sh
 sudo reboot
+```
+
+To check what's happening during startup:
+```bash
+cat /tmp/kiosk-startup.log
 ```
 
 ### No Audio Device Found

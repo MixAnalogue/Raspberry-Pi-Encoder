@@ -1,6 +1,6 @@
 # Raspberry Pi Icecast Encoder - Quick Start
 
-## For Raspberry Pi OS Lite (No Desktop)
+## For Raspberry Pi OS Lite (Recommended for Kiosk Mode)
 
 ```bash
 # 1. Download
@@ -8,17 +8,17 @@ cd ~
 git clone https://github.com/MixAnalogue/Raspberry-Pi-Encoder.git
 cd Raspberry-Pi-Encoder
 
-# 2. Install Desktop Environment
+# 2. Install Minimal Desktop (X server + Openbox)
 chmod +x install-desktop.sh
 ./install-desktop.sh
-# Reboot when prompted
+# Say YES to reboot when prompted
 
 # 3. After reboot, install encoder
 cd ~/Raspberry-Pi-Encoder
 chmod +x install.sh
 ./install.sh
 # Follow prompts for Icecast server details
-# Reboot when prompted
+# Say YES to reboot when prompted
 
 # Done! The web interface should auto-load in full screen
 ```
@@ -35,9 +35,57 @@ cd Raspberry-Pi-Encoder
 chmod +x install.sh
 ./install.sh
 # Follow prompts for Icecast server details
-# Reboot when prompted
+# Say YES to reboot when prompted
 
 # Done! The web interface should auto-load in full screen
+```
+
+## How It Works
+
+### Pi OS Lite Setup:
+1. **install-desktop.sh** installs:
+   - Minimal X server (Xorg)
+   - Openbox window manager
+   - Auto-login to console → auto-start X server
+
+2. **install.sh** configures:
+   - Openbox autostart to launch browser
+   - Browser waits for web service
+   - Loads http://localhost:5000 in kiosk mode
+
+### Boot Sequence:
+```
+Power On → Auto-login → startx → Openbox → Browser → Web Interface
+```
+
+## Troubleshooting
+
+### Check if kiosk is working:
+```bash
+cat /tmp/kiosk-startup.log
+```
+
+### Manually test kiosk mode:
+```bash
+/home/$USER/icecast-streamer/start-kiosk.sh
+```
+
+### Fix kiosk mode:
+```bash
+cd ~/Raspberry-Pi-Encoder
+./fix-kiosk.sh
+sudo reboot
+```
+
+### Check X server is running:
+```bash
+ps aux | grep X
+xset q  # Should show display info
+```
+
+### Verify autostart is configured:
+```bash
+cat ~/.config/openbox/autostart
 ```
 
 ## Accessing the Web Interface
@@ -56,6 +104,7 @@ sudo systemctl restart icecast-streamer
 
 # View logs
 sudo journalctl -u icecast-streamer -f
+cat /tmp/kiosk-startup.log
 
 # Check status
 sudo systemctl status icecast-streamer
@@ -65,16 +114,11 @@ sudo systemctl status icecast-web
 nano /home/$USER/icecast-streamer/config.json
 sudo systemctl restart icecast-streamer
 
-# Fix kiosk mode issues
-cd ~/Raspberry-Pi-Encoder
-./fix-kiosk.sh
+# Restart X server (if display freezes)
+sudo systemctl restart display-manager
+# Or simply reboot:
+sudo reboot
 ```
-
-## What Each Script Does
-
-- **`install-desktop.sh`**: Installs minimal desktop for Pi OS Lite (only needed for Lite version)
-- **`install.sh`**: Main installer - installs encoder, web interface, services
-- **`fix-kiosk.sh`**: Fixes browser auto-start issues
 
 ## Web Interface Features
 
@@ -84,40 +128,68 @@ cd ~/Raspberry-Pi-Encoder
 - **Restart Button**: Restarts the stream
 - **Stop Button**: Stops the stream
 
-## Troubleshooting
+## Common Issues
 
-### CLI only (no desktop)
+### Issue: CLI only (no desktop)
+**Solution**: You need to install the desktop environment first
 ```bash
 cd ~/Raspberry-Pi-Encoder
 ./install-desktop.sh
+sudo reboot
 ```
 
-### Desktop loads but no browser
+### Issue: Desktop loads but no browser
+**Solution**: Openbox autostart not configured
 ```bash
 cd ~/Raspberry-Pi-Encoder
 ./fix-kiosk.sh
+sudo reboot
 ```
 
-### Buttons don't work
+### Issue: Browser loads but shows "Can't connect"
+**Solution**: Web service not running
 ```bash
-# Check if sudoers file exists
-sudo cat /etc/sudoers.d/icecast-streamer
+sudo systemctl status icecast-web
+sudo systemctl start icecast-web
+sudo systemctl enable icecast-web
+```
 
-# If missing, reinstall
+### Issue: Buttons don't work
+**Solution**: Sudoers file missing
+```bash
+sudo cat /etc/sudoers.d/icecast-streamer
+# If missing, reinstall:
 cd ~/Raspberry-Pi-Encoder
 ./install.sh
 ```
 
-### No USB audio detected
+### Issue: No USB audio detected
+**Solution**: Check USB connection
 ```bash
-# List audio devices
-arecord -l
-
-# Check USB devices
-lsusb
+arecord -l   # List audio devices
+lsusb        # List USB devices
 ```
+
+### Issue: Display goes blank/screensaver activates
+**Solution**: Screen blanking not disabled
+```bash
+xset s off
+xset -dpms
+xset s noblank
+# Then fix permanently:
+cd ~/Raspberry-Pi-Encoder
+./fix-kiosk.sh
+```
+
+## Performance Tips
+
+- **Pi OS Lite** uses ~200MB RAM (recommended for kiosk)
+- **Full Pi OS** uses ~500MB RAM (easier setup)
+- Use Pi 3B+ or newer for smooth performance
+- Chromium may take 30-60 seconds to fully load on first boot
 
 ## Support
 
 - Full documentation: `README.md`
 - GitHub: https://github.com/MixAnalogue/Raspberry-Pi-Encoder
+- Logs: `/tmp/kiosk-startup.log` and `sudo journalctl -u icecast-streamer -f`

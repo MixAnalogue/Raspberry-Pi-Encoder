@@ -164,7 +164,8 @@ echo "Step 9: Enabling services..."
 sudo systemctl daemon-reload
 sudo systemctl enable icecast-streamer.service
 sudo systemctl enable icecast-web.service
-sudo systemctl enable kiosk-mode.service
+# Note: kiosk-mode.service is installed but NOT enabled
+# We use Openbox/LXDE autostart instead for better reliability
 
 echo ""
 echo "Step 10: Configuring sudo permissions for web interface..."
@@ -187,30 +188,36 @@ xset s noblank
 EOF
 fi
 
-# Configure LXDE autostart if using desktop environment
-AUTOSTART_DIR="/home/$USER/.config/lxsession/LXDE-pi"
-mkdir -p "$AUTOSTART_DIR"
+# Configure autostart for both LXDE and Openbox
 
-# Remove old kiosk entries if present
-if [ -f "$AUTOSTART_DIR/autostart" ]; then
-    sed -i '/start-kiosk.sh/d' "$AUTOSTART_DIR/autostart"
+# LXDE autostart (for full Raspberry Pi OS)
+LXDE_AUTOSTART_DIR="/home/$USER/.config/lxsession/LXDE-pi"
+mkdir -p "$LXDE_AUTOSTART_DIR"
+
+if [ -f "$LXDE_AUTOSTART_DIR/autostart" ]; then
+    sed -i '/start-kiosk.sh/d' "$LXDE_AUTOSTART_DIR/autostart"
 fi
 
-if ! grep -q "start-kiosk.sh" "$AUTOSTART_DIR/autostart" 2>/dev/null; then
-    cat >> "$AUTOSTART_DIR/autostart" <<EOF
-
-# Disable screen blanking
-@xset s off
-@xset -dpms
-@xset s noblank
-
-# Hide cursor
-@unclutter -idle 0.1 -root
+if ! grep -q "start-kiosk.sh" "$LXDE_AUTOSTART_DIR/autostart" 2>/dev/null; then
+    cat >> "$LXDE_AUTOSTART_DIR/autostart" <<EOF
 
 # Start kiosk mode for Icecast Streamer
 @$INSTALL_DIR/start-kiosk.sh
 EOF
 fi
+
+# Openbox autostart (for Pi OS Lite with minimal desktop)
+OPENBOX_AUTOSTART_DIR="/home/$USER/.config/openbox"
+mkdir -p "$OPENBOX_AUTOSTART_DIR"
+
+cat > "$OPENBOX_AUTOSTART_DIR/autostart" <<EOF
+# Openbox autostart script for Icecast Streamer Kiosk Mode
+
+# Start kiosk browser
+$INSTALL_DIR/start-kiosk.sh &
+EOF
+
+chmod +x "$OPENBOX_AUTOSTART_DIR/autostart"
 
 echo ""
 echo "Step 12: Testing USB audio device..."

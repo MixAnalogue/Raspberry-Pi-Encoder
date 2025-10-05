@@ -21,46 +21,53 @@ echo "Copying updated files..."
 sudo cp "$REPO_DIR/start-kiosk.sh" "$INSTALL_DIR/"
 sudo chmod +x "$INSTALL_DIR/start-kiosk.sh"
 
-# Update systemd service
-echo "Updating systemd service..."
-sed "s|/home/pi|/home/$USER|g" "$REPO_DIR/kiosk-mode.service" > /tmp/kiosk-mode.service
-sed "s|User=pi|User=$USER|g" /tmp/kiosk-mode.service > /tmp/kiosk-mode2.service
-sudo mv /tmp/kiosk-mode2.service /etc/systemd/system/kiosk-mode.service
-sudo systemctl daemon-reload
+echo "Configuring autostart..."
 
-# Update LXDE autostart
-echo "Updating LXDE autostart..."
-AUTOSTART_DIR="/home/$USER/.config/lxsession/LXDE-pi"
-mkdir -p "$AUTOSTART_DIR"
+# Configure Openbox autostart (Pi OS Lite)
+OPENBOX_AUTOSTART_DIR="/home/$USER/.config/openbox"
+mkdir -p "$OPENBOX_AUTOSTART_DIR"
 
-# Remove old kiosk entries if present
-if [ -f "$AUTOSTART_DIR/autostart" ]; then
-    sed -i '/start-kiosk.sh/d' "$AUTOSTART_DIR/autostart"
+cat > "$OPENBOX_AUTOSTART_DIR/autostart" <<EOF
+# Openbox autostart script for Icecast Streamer Kiosk Mode
+
+# Start kiosk browser
+$INSTALL_DIR/start-kiosk.sh &
+EOF
+
+chmod +x "$OPENBOX_AUTOSTART_DIR/autostart"
+
+# Configure LXDE autostart (Full Pi OS)
+LXDE_AUTOSTART_DIR="/home/$USER/.config/lxsession/LXDE-pi"
+mkdir -p "$LXDE_AUTOSTART_DIR"
+
+if [ -f "$LXDE_AUTOSTART_DIR/autostart" ]; then
+    sed -i '/start-kiosk.sh/d' "$LXDE_AUTOSTART_DIR/autostart"
 fi
 
-if ! grep -q "start-kiosk.sh" "$AUTOSTART_DIR/autostart" 2>/dev/null; then
-    cat >> "$AUTOSTART_DIR/autostart" <<EOF
-
-# Disable screen blanking
-@xset s off
-@xset -dpms
-@xset s noblank
-
-# Hide cursor
-@unclutter -idle 0.1 -root
+if ! grep -q "start-kiosk.sh" "$LXDE_AUTOSTART_DIR/autostart" 2>/dev/null; then
+    cat >> "$LXDE_AUTOSTART_DIR/autostart" <<EOF
 
 # Start kiosk mode for Icecast Streamer
 @$INSTALL_DIR/start-kiosk.sh
 EOF
 fi
 
+# Disable systemd kiosk service if it's enabled
+if systemctl is-enabled kiosk-mode.service &>/dev/null; then
+    echo "Disabling systemd kiosk service..."
+    sudo systemctl disable kiosk-mode.service
+    sudo systemctl stop kiosk-mode.service
+fi
+
 echo ""
 echo "Kiosk mode fixed!"
 echo ""
-echo "The browser will now:"
-echo "  - Wait for X server to be ready"
-echo "  - Wait for web service to respond"
-echo "  - Start automatically on boot"
+echo "Configuration applied for:"
+echo "  - Openbox autostart (Pi OS Lite)"
+echo "  - LXDE autostart (Full Pi OS)"
 echo ""
-echo "Please reboot to test:"
+echo "To test, reboot your Pi:"
 echo "  sudo reboot"
+echo ""
+echo "To view startup logs:"
+echo "  cat /tmp/kiosk-startup.log"
