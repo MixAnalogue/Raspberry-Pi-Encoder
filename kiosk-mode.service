@@ -8,10 +8,14 @@ Type=simple
 User=pi
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/pi/.Xauthority
-ExecStartPre=/bin/sleep 10
+# Wait for X server to be available
+ExecStartPre=/bin/bash -c 'while ! xset q &>/dev/null; do sleep 1; done'
+# Additional delay to ensure web service is ready
+ExecStartPre=/bin/sleep 5
 ExecStart=/bin/bash -c 'if command -v chromium-browser &>/dev/null; then chromium-browser --kiosk --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-restore-session-state --disable-features=TranslateUI --check-for-update-interval=31536000 http://localhost:5000; else chromium --kiosk --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-restore-session-state --disable-features=TranslateUI --check-for-update-interval=31536000 http://localhost:5000; fi'
-Restart=always
+Restart=on-failure
 RestartSec=10
+TimeoutStartSec=60
 
 [Install]
 WantedBy=graphical.target

@@ -58,7 +58,8 @@ sudo apt-get install -y \
     alsa-utils \
     $CHROMIUM_PKG \
     unclutter \
-    x11-xserver-utils
+    x11-xserver-utils \
+    curl
 
 echo ""
 echo "Step 3: Installing Python dependencies..."
@@ -92,9 +93,11 @@ echo ""
 echo "Step 5: Copying files..."
 cp "$REPO_DIR/streamer.py" "$INSTALL_DIR/"
 cp "$REPO_DIR/web_interface.py" "$INSTALL_DIR/"
+cp "$REPO_DIR/start-kiosk.sh" "$INSTALL_DIR/"
 cp -r "$REPO_DIR/templates" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/streamer.py"
 chmod +x "$INSTALL_DIR/web_interface.py"
+chmod +x "$INSTALL_DIR/start-kiosk.sh"
 
 echo ""
 echo "Step 6: Creating configuration..."
@@ -186,10 +189,15 @@ fi
 
 # Configure LXDE autostart if using desktop environment
 AUTOSTART_DIR="/home/$USER/.config/lxsession/LXDE-pi"
-if [ -d "$AUTOSTART_DIR" ]; then
-    mkdir -p "$AUTOSTART_DIR"
-    if ! grep -q "xset s off" "$AUTOSTART_DIR/autostart" 2>/dev/null; then
-        cat >> "$AUTOSTART_DIR/autostart" <<'EOF'
+mkdir -p "$AUTOSTART_DIR"
+
+# Remove old kiosk entries if present
+if [ -f "$AUTOSTART_DIR/autostart" ]; then
+    sed -i '/start-kiosk.sh/d' "$AUTOSTART_DIR/autostart"
+fi
+
+if ! grep -q "start-kiosk.sh" "$AUTOSTART_DIR/autostart" 2>/dev/null; then
+    cat >> "$AUTOSTART_DIR/autostart" <<EOF
 
 # Disable screen blanking
 @xset s off
@@ -198,8 +206,10 @@ if [ -d "$AUTOSTART_DIR" ]; then
 
 # Hide cursor
 @unclutter -idle 0.1 -root
+
+# Start kiosk mode for Icecast Streamer
+@$INSTALL_DIR/start-kiosk.sh
 EOF
-    fi
 fi
 
 echo ""

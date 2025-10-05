@@ -99,7 +99,7 @@ If you prefer to install manually:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-flask ffmpeg alsa-utils chromium unclutter x11-xserver-utils
+sudo apt-get install -y python3 python3-pip python3-flask ffmpeg alsa-utils chromium unclutter x11-xserver-utils curl
 ```
 
 ### 2. Copy Files
