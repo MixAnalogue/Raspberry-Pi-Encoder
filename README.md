@@ -35,17 +35,17 @@ On your Raspberry Pi, clone or download this repository:
 
 ```bash
 cd ~
-git clone https://github.com/MixAnalogue/icecast-streamer.git
-cd icecast-streamer
+git clone https://github.com/MixAnalogue/Raspberry-Pi-Encoder.git
+cd Raspberry-Pi-Encoder
 ```
 
 Or download as ZIP and extract:
 
 ```bash
 cd ~
-wget https://github.com/MixAnalogue/icecast-streamer/archive/main.zip
+wget https://github.com/MixAnalogue/Raspberry-Pi-Encoder/archive/main.zip
 unzip main.zip
-cd icecast-streamer-main
+cd Raspberry-Pi-Encoder-main
 ```
 
 ### 2. Run the Installation Script
