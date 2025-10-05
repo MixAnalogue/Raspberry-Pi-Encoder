@@ -24,6 +24,7 @@ A robust, production-ready Icecast streaming encoder for Raspberry Pi with autom
 
 - Raspberry Pi OS (Bullseye or later)
 - Python 3.7+
+- Flask (Python web framework)
 - FFmpeg
 - Chromium browser (for web interface)
 
@@ -98,8 +99,7 @@ If you prefer to install manually:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip ffmpeg alsa-utils chromium unclutter x11-xserver-utils
-pip3 install --user flask
+sudo apt-get install -y python3 python3-pip python3-flask ffmpeg alsa-utils chromium unclutter x11-xserver-utils
 ```
 
 ### 2. Copy Files

@@ -59,7 +59,14 @@ sudo apt-get install -y \
 
 echo ""
 echo "Step 3: Installing Python dependencies..."
-pip3 install --user flask
+# Try to install Flask from apt first, fall back to pip if needed
+if apt-cache show python3-flask &>/dev/null; then
+    echo "Installing Flask from system packages..."
+    sudo apt-get install -y python3-flask
+else
+    echo "Installing Flask via pip..."
+    pip3 install --user --break-system-packages flask
+fi
 
 echo ""
 echo "Step 4: Creating installation directory..."
